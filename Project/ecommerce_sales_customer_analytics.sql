@@ -327,3 +327,102 @@ order by TotalAmount
 
 select PaymentStatus,Count(PaymentID) as TotalPayments
 from Payments Group by PaymentStatus
+
+select top 5 c.CustomerId ,c.FirstName+' '+c.LastName as CustomerName,
+sum(od.Quantity*od.UnitPrice) as TotalSpent from 
+Customers c join Orders o on c.CustomerId=o.CustomerID
+join OrderDetails od on o.OrderID=od.OrderID
+GROUP BY c.CustomerId,
+c.FirstName,
+c.LastName
+Order by TotalSpent DESC
+
+select TOP 5 p.ProductName,SUM(od.Quantity) as QuantitySold
+from Products p join OrderDetails od on p.ProductID=od.ProductID
+Group by p.ProductName 
+Order by QuantitySold DESC
+
+SELECT TOP 5 p.ProductName , sum(od.Quantity*od.UnitPrice) as 
+TotalRevenue from Products p join OrderDetails od on
+p.ProductID=od.ProductID
+group by p.ProductName order by TotalRevenue DESC
+
+SELECT c.CategoryName, sum(od.Quantity*od.UnitPrice) as TotalRevenue,
+SUM(od.Quantity * od.UnitPrice) * 100.0 /
+    (
+        SELECT SUM(Quantity * UnitPrice)
+        FROM OrderDetails
+    ) AS RevenuePercentage
+from Categories c join Products p on
+c.CategoryID=p.CategoryID join OrderDetails od on
+p.ProductID=od.ProductID 
+GROUP BY c.CategoryName
+Order by RevenuePercentage DESC
+
+select c.FirstName+'  '+c.LastName as CustomerName,count(Distinct o.OrderId)
+as TotalOrders from Customers c join Orders o on
+c.CustomerId=o.CustomerID
+GROUP BY c.FirstName,
+c.LastName
+having count(Distinct o.OrderID)>1
+order by TotalOrders 
+
+select avg(OrderValue) as AvgOrderValue
+from(
+
+    select OrderID ,
+    sum(quantity*Unitprice) as OrderValue
+    from OrderDetails 
+    GROUP BY OrderID
+    )
+as OrderTotals
+
+select c.CustomerId,c.FirstName+'  '+c.LastName as CustomerName
+from Customers c left join Orders o on
+c.CustomerId=o.CustomerID
+Group by c.CustomerId,
+c.FirstName,
+c.LastName
+having count(o.OrderID) =0
+
+select p.ProductID, p.ProductName
+from Products p left join OrderDetails od
+on p.ProductID=od.ProductID
+group by p.ProductID,p.ProductName
+having count(od.ProductID)=0
+
+select o.OrderID
+from Orders o left join Payments p
+on o.OrderID=p.OrderID
+GROUP BY o.OrderID
+having count(p.PaymentID)=0
+
+select c.City, sum(od.Quantity*od.UnitPrice) as CityRevenue
+from Customers c join Orders o on
+c.CustomerId=o.CustomerID join OrderDetails od
+on o.OrderID=od.OrderID
+group by c.City 
+Order by CityRevenue DESC
+
+select  avg(TotalOrders) as AvgOrders
+from(
+    SELECT  OrderID,SUM(Quantity) as TotalOrders
+    from OrderDetails
+    group by OrderID
+    )
+as AVGORDERS
+
+WITH CustomerSpending AS
+(
+    select TOP 5 c.CustomerId,c.FirstName+' '+c.LastName as CustomerName,
+    sum(od.Quantity*od.UnitPrice) as TotalSpent
+    from Customers c join Orders o on c.CustomerId=o.CustomerID join
+    OrderDetails od on o.OrderID=od.OrderID
+    GROUP BY c.CustomerId,
+    c.FirstName,
+    c.LastName
+    order by TotalSpent DESC
+)
+select TOP 5 * from CustomerSpending
+
+
