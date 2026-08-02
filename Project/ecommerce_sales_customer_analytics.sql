@@ -533,3 +533,98 @@ with Recent_order as
 
 select * from Recent_order where OrderRank=1 
 order by CustomerName
+
+
+with FirstOrders as
+(
+    select c.FirstName+' '+c.LastName as CustomerName,
+    o.OrderID,o.OrderDate,
+    row_number() over
+    (
+        partition by c.CustomerId
+        Order by o.OrderDate ASC
+    )as FirstOrder
+    from Customers c join Orders o on
+    c.CustomerId=o.CustomerID
+    
+)
+
+select * from FirstOrders
+where FirstOrder=1
+Order by CustomerName
+
+with first_in_city as
+(
+    select c.City,c.FirstName+' '+c.LastName as CustomerName,
+    sum(od.Quantity*od.UnitPrice) as TotalSpent,
+    row_number() over
+    (
+        Partition by c.City
+        Order by sum(od.Quantity*od.UnitPrice) DESC
+    ) as TopRank
+    from Customers c join Orders o on
+    c.CustomerId=o.CustomerID join OrderDetails od on
+    o.OrderID=od.OrderID
+    group by c.city,
+    c.FirstName,
+    c.LastName
+)
+select * from first_in_city
+where TopRank=1
+Order by city
+
+
+with firstrank as
+(
+    select c.FirstName+' '+c.LastName as CustomerName,
+    sum(od.Quantity*od.UnitPrice) as TotalSpending,
+    RANK()over
+    (
+        order by sum(od.Quantity*od.UnitPrice) DESC
+    ) AS CustomerRank
+    from Customers c join Orders o on
+    c.CustomerId=o.CustomerID join OrderDetails od on
+    o.OrderID=od.OrderID
+    Group by c.FirstName,
+    c.LastName
+)
+select * from firstrank 
+
+with seperate_rank as
+(
+    select c.City,c.FirstName+' '+c.LastName as CustomerName,
+    sum(od.Quantity*od.UnitPrice) as TotalSpent,
+    RANK() over
+    (
+        Partition by c.city
+        Order by sum(od.Quantity*od.UnitPrice) DESC
+    )as Ranks
+    From  Customers c join Orders o on
+    c.CustomerId=o.CustomerID join 
+    OrderDetails od on o.OrderID=od.OrderID
+    Group by c.city,
+    c.FirstName,
+    c.LastName
+)
+SELECT * from seperate_rank 
+order by city
+
+with seperate_rank as
+(
+    select c.City,c.FirstName+' '+c.LastName as CustomerName,
+    sum(od.Quantity*od.UnitPrice) as TotalSpent,
+    RANK() over
+    (
+        Partition by c.city
+        Order by sum(od.Quantity*od.UnitPrice) DESC
+    )as Ranks
+    From  Customers c join Orders o on
+    c.CustomerId=o.CustomerID join 
+    OrderDetails od on o.OrderID=od.OrderID
+    Group by c.city,
+    c.FirstName,
+    c.LastName
+)
+SELECT * from seperate_rank 
+where Ranks<3
+order by city
