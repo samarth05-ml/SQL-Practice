@@ -628,3 +628,17 @@ with seperate_rank as
 SELECT * from seperate_rank 
 where Ranks<3
 order by city
+
+with ProductRanking as
+(
+    select p.ProductID,p.ProductName,
+    sum(od.Quantity*od.UnitPrice) as TotalRevenue,
+    DENSE_RANK() over
+    (
+        order by sum(od.Quantity*od.UnitPrice) DESC
+    ) as ProductRank
+    from Products p join OrderDetails od on
+    p.ProductID=od.ProductID
+    group by p.ProductID,p.ProductName
+)
+select * from ProductRanking
