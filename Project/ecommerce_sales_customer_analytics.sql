@@ -414,7 +414,7 @@ as AVGORDERS
 
 WITH CustomerSpending AS
 (
-    select TOP 5 c.CustomerId,c.FirstName+' '+c.LastName as CustomerName,
+    select  c.CustomerId,c.FirstName+' '+c.LastName as CustomerName,
     sum(od.Quantity*od.UnitPrice) as TotalSpent
     from Customers c join Orders o on c.CustomerId=o.CustomerID join
     OrderDetails od on o.OrderID=od.OrderID
@@ -425,4 +425,111 @@ WITH CustomerSpending AS
 )
 select TOP 5 * from CustomerSpending
 
+with CustomerSpending AS
+(
+    select c.CustomerID,c.FirstName+' '+c.LastName as CustomerName,
+    sum(od.Quantity*od.UnitPrice) as TotalSpending
+    from Customers c join Orders o on
+    c.CustomerId=o.CustomerID join OrderDetails od on
+    o.OrderID=od.OrderID
+    Group by c.CustomerId,
+    c.FirstName,
+    c.LastName
+    --Order by TotalSpending DESC
+ ) 
 
+ select * from CustomerSpending
+ where TotalSpending>
+ (
+ select avg(TotalSpending) as AvgSpending 
+ from CustomerSpending 
+ )
+
+ with Person_city_spending as
+ (
+     select c.City, c.FirstName+' '+c.LastName as CustomerName,
+     sum(od.Quantity*od.UnitPrice) as TotalSpent,
+     ROW_NUMBER() OVER (
+            PARTITION BY c.City
+            ORDER BY SUM(od.Quantity * od.UnitPrice) DESC
+        ) AS CityRank
+     from Customers c join Orders o on
+     c.CustomerId=o.CustomerID join OrderDetails od on
+     o.OrderID=od.OrderID 
+     group by c.city,
+     c.FirstName,
+     c.LastName
+     
+)
+
+select * from Person_city_spending Order by city,CityRank
+
+
+with CustomerSpending AS
+(
+    select row_number() over(
+        Order by SUM(od.Quantity * od.UnitPrice) desc
+        ) as CustomerRank,c.CustomerID,c.FirstName+' '+c.LastName as CustomerName,
+    sum(od.Quantity*od.UnitPrice) as TotalSpending
+    
+    from Customers c join Orders o on
+    c.CustomerId=o.CustomerID join OrderDetails od on
+    o.OrderID=od.OrderID
+    Group by c.CustomerId,
+    c.FirstName,
+    c.LastName
+ ) 
+
+ select * from CustomerSpending
+
+ with ProductRank as
+ (
+     select p.ProductName, sum(od.Quantity*od.UnitPrice) as TotalRevenue,
+     row_number() over(
+        order by sum(od.Quantity*od.UnitPrice) 
+        desc
+        ) as ProductRank
+    from Products p join OrderDetails od on
+    p.ProductID=od.ProductID
+    Group by p.ProductName
+)
+select * from ProductRank
+
+with category_Product_rank as
+(
+    select c.CategoryName, p.ProductName,sum(od.Quantity*od.UnitPrice)
+    as Revenue, row_number() over(
+        Partition by c.CategoryName
+        order by sum(od.Quantity*od.UnitPrice) DESC
+        ) as Ranks
+    from Categories c join Products p on
+    c.CategoryId=p.CategoryID join OrderDetails od on
+    p.ProductID=od.ProductID 
+    Group by  c.CategoryName,p.ProductName
+)
+
+select * from category_Product_rank
+WHERE Ranks = 1
+order by CategoryName
+
+with Recent_order as
+(
+    select c.FirstName+' '+c.LastName as CustomerName,
+    o.OrderID, o.OrderDate, 
+    row_number() over
+    (
+        Partition by c.CustomerId
+        Order by o.OrderDate DESC 
+    ) as OrderRank
+    from Customers c join Orders o on
+    c.CustomerId=o.CustomerID 
+    group by c.FirstName,
+    c.LastName,
+    o.OrderID,
+    o.OrderDate,
+    c.CustomerId
+    
+)
+
+select * from Recent_order where OrderRank=1 
+order by CustomerName
